@@ -1,8 +1,9 @@
 /*
- * Alterada a lógica de verificação de ambiente para ser mais robusta.
- * - O servidor agora serve os arquivos do frontend por padrão.
- * - A mensagem "API em modo de desenvolvimento" só aparecerá se NODE_ENV
- * for explicitamente definido como 'development', corrigindo o problema no deploy.
+ * Removida a lógica condicional de ambiente para servir o frontend.
+ * - O servidor agora SEMPRE servirá os arquivos estáticos do frontend como
+ * comportamento padrão após tentar resolver as rotas da API.
+ * - Isso corrige o problema de deploy no Render de forma definitiva,
+ * tornando o código mais simples e robusto.
  */
 import express from 'express';
 import dotenv from 'dotenv';
@@ -49,6 +50,7 @@ const startServer = async () => {
 
   app.get('/health', (req, res) => res.status(200).send('OK'));
 
+  // Definir rotas da API
   app.use('/api/auth', authRoutes);
   app.use('/api/user', userRoutes);
   app.use('/api/categories', categoryRoutes);
@@ -56,32 +58,28 @@ const startServer = async () => {
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/logs', logRoutes);
 
+  // --- Lógica para servir o frontend ---
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
+  const frontendDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
 
-  // --- Lógica para servir o frontend ---
-  // Se não estivermos explicitamente em desenvolvimento, sirva o build de produção.
-  if (process.env.NODE_ENV !== 'development') {
-    const frontendDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
-    app.use(express.static(frontendDistPath));
+  // Serve os arquivos estáticos da pasta 'dist' do frontend
+  app.use(express.static(frontendDistPath));
 
-    // Para qualquer outra rota, sirva o index.html do frontend
-    app.get('*', (req, res) => {
-      res.sendFile(path.resolve(frontendDistPath, 'index.html'));
-    });
-  } else {
-    // Apenas em desenvolvimento, mostre a mensagem da API.
-    app.get('/', (req, res) => {
-      res.send('API está rodando em modo de desenvolvimento...');
-    });
-  }
+  // Para qualquer outra rota que não seja da API, sirva o index.html do frontend
+  // Isso é essencial para que o roteamento do React (React Router) funcione.
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(frontendDistPath, 'index.html'));
+  });
+  // --- Fim da lógica de produção ---
 
+  // Middlewares de Erro
   app.use(notFound);
   app.use(errorHandler);
 
   const PORT = process.env.PORT || 5000;
 
-  app.listen(PORT, console.log(`Servidor rodando no modo ${process.env.NODE_ENV || 'production'} na porta ${PORT}`));
+  app.listen(PORT, console.log(`Servidor rodando na porta ${PORT}`));
 };
 
 startServer().catch(err => {
