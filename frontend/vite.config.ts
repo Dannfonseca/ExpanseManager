@@ -1,12 +1,11 @@
 /*
- * Reintroduzida a configuração de proxy do servidor de desenvolvimento.
- * Agora, o Vite redirecionará as requisições de API para o backend,
- * permitindo o funcionamento correto em ambiente de desenvolvimento (localhost).
+ * Removida a dependência de desenvolvimento 'lovable-tagger' que
+ * estava causando falha no build de produção. A configuração de proxy
+ * para o ambiente local foi mantida.
  */
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -22,10 +21,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  plugins: [
-    react(),
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
+  plugins: [react()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
