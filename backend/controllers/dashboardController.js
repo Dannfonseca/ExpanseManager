@@ -1,6 +1,7 @@
 /*
  * Corrigido o erro de exportação e implementada a busca de dados para o gráfico de pizza.
  * - A função getCategoryBreakdown foi adicionada e exportada corretamente.
+ * - Corrigidas as chamadas de logger para usar o novo método logEvent.
  */
 import asyncHandler from 'express-async-handler';
 import Transaction from '../models/Transaction.js';
@@ -30,7 +31,7 @@ const getDashboardSummary = asyncHandler(async (req, res) => {
     const { compareYear, compareMonth } = req.query;
     const userId = req.user._id;
 
-    logger.log(`User ${userId} fetching dashboard summary for ${month}/${year}.`);
+    logger.logEvent('INFO', `User ${userId} fetching dashboard summary for ${month}/${year}.`);
 
     const numYear = parseInt(year);
     const numMonth = parseInt(month);
@@ -56,7 +57,7 @@ const getDashboardSummary = asyncHandler(async (req, res) => {
     
     let comparisonDailyExpenses = null;
     if (compareYear && compareMonth) {
-      logger.log(`Fetching comparison data for ${compareMonth}/${compareYear}`);
+      logger.logEvent('INFO', `Fetching comparison data for ${compareMonth}/${compareYear}`);
       comparisonDailyExpenses = await getDailyExpensesForMonth(userId, parseInt(compareYear), parseInt(compareMonth));
     }
 
@@ -116,7 +117,7 @@ const getCategoryBreakdown = asyncHandler(async (req, res) => {
     breakdownData[monthStr] = { expenses, incomes };
   }
   
-  logger.log(`User ${userId} fetched category breakdown for months: ${months.join(', ')}.`);
+  logger.logEvent('INFO', `User ${userId} fetched category breakdown for months: ${months.join(', ')}.`);
   res.json(breakdownData);
 });
 
