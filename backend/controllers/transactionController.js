@@ -4,6 +4,7 @@
  * garantindo que a categoria seja validada apenas para despesas.
  * Adicionados filtros por data e tipo na busca de transações.
  * Refatorada a lógica de busca para garantir a consistência dos dados.
+ * - Corrigidas as chamadas de logger para usar o novo método logEvent.
  */
 import asyncHandler from 'express-async-handler';
 import Transaction from '../models/Transaction.js';
@@ -45,7 +46,7 @@ const getTransactions = asyncHandler(async (req, res) => {
     const { category, search, month, year, type } = req.query;
     const filter = { user: req.user._id };
   
-    logger.log(`User ${req.user._id} fetching transactions with query: ${JSON.stringify(req.query)}`);
+    logger.logEvent('INFO', `User ${req.user._id} fetching transactions with query: ${JSON.stringify(req.query)}`);
   
     // Filtro de data
     if (year && month) {
@@ -80,7 +81,7 @@ const getTransactions = asyncHandler(async (req, res) => {
       filteredTransactions = filteredTransactions.filter(t => t.type === type);
     }
   
-    logger.log(`Found ${filteredTransactions.length} transactions for user ${req.user._id} after applying all filters.`);
+    logger.logEvent('INFO', `Found ${filteredTransactions.length} transactions for user ${req.user._id} after applying all filters.`);
   
     res.json({
       transactions: filteredTransactions,
@@ -99,7 +100,7 @@ const createTransaction = asyncHandler(async (req, res) => {
   const parsedBody = transactionSchema.parse(req.body);
   const { type, description, amount, date, category, notes } = parsedBody;
 
-  logger.log(`User ${req.user._id} creating ${type} transaction: "${description}".`);
+  logger.logEvent('INFO', `User ${req.user._id} creating ${type} transaction: "${description}".`);
   
   const transaction = new Transaction({
     user: req.user._id,
@@ -112,7 +113,7 @@ const createTransaction = asyncHandler(async (req, res) => {
   });
 
   const createdTransaction = await transaction.save();
-  logger.log(`Transaction "${description}" created with ID ${createdTransaction._id} for user ${req.user._id}.`);
+  logger.logEvent('INFO', `Transaction "${description}" created with ID ${createdTransaction._id} for user ${req.user._id}.`);
   res.status(201).json(createdTransaction);
 });
 
@@ -121,14 +122,14 @@ const createTransaction = asyncHandler(async (req, res) => {
 // @access  Private
 const getTransactionById = asyncHandler(async (req, res) => {
     const transactionId = req.params.id;
-    logger.log(`User ${req.user._id} fetching transaction with ID ${transactionId}.`);
+    logger.logEvent('INFO', `User ${req.user._id} fetching transaction with ID ${transactionId}.`);
     const transaction = await Transaction.findById(transactionId).populate('category', 'name color');
 
     if (transaction && transaction.user.toString() === req.user._id.toString()) {
-        logger.log(`Transaction ${transactionId} found for user ${req.user._id}.`);
+        logger.logEvent('INFO', `Transaction ${transactionId} found for user ${req.user._id}.`);
         res.json(transaction);
     } else {
-        logger.log(`Fetch failed: Transaction ${transactionId} not found or user ${req.user._id} not authorized.`);
+        logger.logEvent('INFO', `Fetch failed: Transaction ${transactionId} not found or user ${req.user._id} not authorized.`);
         res.status(404);
         throw new Error('Transação não encontrada.');
     }
@@ -142,7 +143,7 @@ const updateTransaction = asyncHandler(async (req, res) => {
     const { type, description, amount, date, category, notes } = parsedBody;
     const transactionId = req.params.id;
     
-    logger.log(`User ${req.user._id} attempting to update transaction ${transactionId}.`);
+    logger.logEvent('INFO', `User ${req.user._id} attempting to update transaction ${transactionId}.`);
     const transaction = await Transaction.findById(transactionId);
 
     if (transaction && transaction.user.toString() === req.user._id.toString()) {
@@ -154,11 +155,11 @@ const updateTransaction = asyncHandler(async (req, res) => {
         transaction.notes = notes || transaction.notes;
         
         const updatedTransaction = await transaction.save();
-        logger.log(`Transaction ${transactionId} updated successfully for user ${req.user._id}.`);
+        logger.logEvent('INFO', `Transaction ${transactionId} updated successfully for user ${req.user._id}.`);
         res.json(updatedTransaction);
 
     } else {
-        logger.log(`Update failed: Transaction ${transactionId} not found or user ${req.user._id} not authorized.`);
+        logger.logEvent('INFO', `Update failed: Transaction ${transactionId} not found or user ${req.user._id} not authorized.`);
         res.status(404);
         throw new Error('Transação não encontrada');
     }
@@ -170,15 +171,15 @@ const updateTransaction = asyncHandler(async (req, res) => {
 // @access  Private
 const deleteTransaction = asyncHandler(async (req, res) => {
     const transactionId = req.params.id;
-    logger.log(`User ${req.user._id} attempting to delete transaction ${transactionId}.`);
+    logger.logEvent('INFO', `User ${req.user._id} attempting to delete transaction ${transactionId}.`);
     const transaction = await Transaction.findById(transactionId);
 
     if (transaction && transaction.user.toString() === req.user._id.toString()) {
         await transaction.deleteOne();
-        logger.log(`Transaction ${transactionId} deleted successfully for user ${req.user._id}.`);
+        logger.logEvent('INFO', `Transaction ${transactionId} deleted successfully for user ${req.user._id}.`);
         res.json({ message: 'Transação removida.' });
     } else {
-        logger.log(`Delete failed: Transaction ${transactionId} not found or user ${req.user._id} not authorized.`);
+        logger.logEvent('INFO', `Delete failed: Transaction ${transactionId} not found or user ${req.user._id} not authorized.`);
         res.status(404);
         throw new Error('Transação não encontrada');
     }
